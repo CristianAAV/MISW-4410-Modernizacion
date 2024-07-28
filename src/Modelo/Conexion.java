@@ -10,11 +10,19 @@ public class Conexion {
 
     public Connection getConnection() {
         try {
-            String myBD = "jdbc:mysql://localhost:3306/proyecto_java?serverTimezone=UTC";
-            con = DriverManager.getConnection(myBD, "root", "");
+            Class.forName("org.postgresql.Driver");
+
+            String myBD = "jdbc:postgresql://misodb.cd2u2qma0z9z.us-east-1.rds.amazonaws.com:5432/misodb";
+            String usuario = "misoAdmin";
+            String contraseña = "admin1234";
+            
+            con = DriverManager.getConnection(myBD, usuario, contraseña);
             return con;
         } catch (SQLException e) {
             System.out.println(e.toString());
+        } catch (ClassNotFoundException e) {
+            System.out.println("Driver de PostgreSQL no encontrado.");
+            e.printStackTrace();
         }
         return null;
     }
