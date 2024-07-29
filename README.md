@@ -17,3 +17,26 @@
 
 ## Iniciar Aplicación:
 [![Iniciar Aplicación](https://img.youtube.com/vi/sMKRnS3bP_o/0.jpg)](https://youtu.be/sMKRnS3bP_o)
+
+## Librerías Utilizadas:
+* AbsoluteLayout.jar
+* aws-java-sdk-1.12.765.jar
+* aws-java-sdk-1.9.9.jar
+* commons-logging-1.3.3-adapters.jar
+* commons-logging-1.3.3-api.jar
+* commons-logging-1.3.3-javadoc.jar
+* commons-logging-1.3.3-sources.jar
+* commons-logging-1.3.3.jar
+* httpclient-4.5.13.jar
+* httpcore-4.4.13.jar
+* itextpdf-5.5.1.jar
+* jackson-annotations-2.13.0.jar
+* jackson-core-2.13.0.jar
+* jackson-databind-2.13.0.jar
+* jcalendar-1.4.jar
+* jcommon-1.0.23.jar
+jfreechart-1.0.19.jar
+joda-time-2.10.10.jar
+json-20210307.jar
+mysql-connector-java-8.0.19.jar
+postgresql-42.7.3.jar
