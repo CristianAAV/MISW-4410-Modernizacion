@@ -15,9 +15,13 @@ import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import java.awt.Desktop;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -28,12 +32,17 @@ import java.util.Date;
 import java.util.List;
 import javax.swing.filechooser.FileSystemView;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 public class VentaDao {
     Connection con;
     Conexion cn = new Conexion();
     PreparedStatement ps;
     ResultSet rs;
     int r;
+
+    private static final String GET_URL = "http://44.203.31.118:8080/ventas";
     
     public int IdVenta(){
         int id = 0;
@@ -110,7 +119,7 @@ public class VentaDao {
         }
     }
     
-    public List Listarventas(){
+    public List ListarventasLegado(){
        List<Venta> ListaVenta = new ArrayList();
        String sql = "SELECT c.id AS id_cli, c.nombre, v.* FROM clientes c INNER JOIN ventas v ON c.id = v.cliente";
        try {
@@ -130,6 +139,67 @@ public class VentaDao {
        }
        return ListaVenta;
    }
+    
+
+    public List Listarventas() {
+    	List<Venta> ListaVenta = new ArrayList();
+        try {
+            // Create a URL object with the endpoint URL
+            URL url = new URL(GET_URL);
+            
+            // Open a connection to the URL
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            
+            // Set the request method to GET
+            connection.setRequestMethod("GET");
+            
+            // Set request headers if needed
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0");
+
+            // Get the response code
+            int responseCode = connection.getResponseCode();
+
+            // Read the response if the response code is HTTP_OK (200)
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                String inputLine;
+                StringBuffer response = new StringBuffer();
+                
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+                
+                String jsonString = response.toString();
+                JSONArray jsonArray = new JSONArray(jsonString);
+
+                // Recorrer el array y extraer elementos de cada JSONObject
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject jsonObject = jsonArray.getJSONObject(i);
+                    int id = jsonObject.getInt("id");
+                    //int id_cliente = jsonObject.getInt("cliente");
+                    String cliente = jsonObject.getString("cliente");
+                    //String cliente_id = "cliente " +  id_cliente;
+                    String vendedor = jsonObject.getString("vendedor");
+                    double total = jsonObject.getDouble("total");
+                    Venta vent = new Venta();
+                    vent.setId(id);
+                    vent.setNombre_cli(cliente);
+                    vent.setVendedor(vendedor);
+                    vent.setTotal(total);
+                    ListaVenta.add(vent);
+                }
+            } else {
+                System.out.println("GET request not worked");
+            }            
+            
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        return ListaVenta;
+    } 
+    
     public Venta BuscarVenta(int id){
         Venta cl = new Venta();
         String sql = "SELECT * FROM ventas WHERE id = ?";

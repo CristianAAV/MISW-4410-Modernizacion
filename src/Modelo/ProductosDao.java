@@ -7,6 +7,31 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.io.OutputStream;
+/**/
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import com.amazonaws.services.sqs.model.SendMessageRequest;
+import com.amazonaws.services.sqs.model.SendMessageResult;
+
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+/**/
+
 
 public class ProductosDao {
     Connection con;
@@ -14,7 +39,53 @@ public class ProductosDao {
     PreparedStatement ps;
     ResultSet rs;
     
-    public boolean RegistrarProductos(Productos pro){
+    private static final String GET_URL = "http://44.203.31.118:8080/productos";
+    
+    
+    
+    public boolean RegistrarProductos(Productos pro){    	
+        // Reemplaza con tus propias credenciales y URL de la cola
+        String accessKey = "";
+        String secretKey = "";
+        String queueUrl = "https://sqs.us-east-1.amazonaws.com/010438488420/windows_to_inventory_queue_name";
+        BasicAWSCredentials awsCreds = new BasicAWSCredentials(accessKey, secretKey);
+
+        // Creación del cliente SQS
+        AmazonSQS sqs = AmazonSQSClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
+                .withRegion("us-east-1") // Reemplaza con tu región
+                .build();
+
+        /*******************************************/
+        ObjectMapper objectMapper = new ObjectMapper();
+        
+        try {
+            // Convertir el objeto a JSON
+            String jsonString = objectMapper.writeValueAsString(pro);
+
+            // Imprimir el JSON resultante
+            System.out.println(jsonString);
+            
+            SendMessageRequest send_msg_request = new SendMessageRequest()
+                    .withQueueUrl(queueUrl)
+                    .withMessageBody(jsonString)
+                    .withDelaySeconds(5);        
+
+            // Envío del mensaje
+            sqs.sendMessage(send_msg_request);
+
+            System.out.println("Mensaje enviado correctamente");
+            
+            
+        } catch (JsonProcessingException e) {
+            /// e.printStackTrace();
+        }
+        /*******************************************/
+
+    	return true;
+    }
+    
+    public boolean RegistrarProductosLegado(Productos pro){
         String sql = "INSERT INTO productos (codigo, nombre, proveedor, stock, precio) VALUES (?,?,?,?,?)";
         try {
             con = cn.getConnection();
@@ -29,10 +100,75 @@ public class ProductosDao {
         } catch (SQLException e) {
             System.out.println(e.toString());
             return false;
-        }
+        }    	
     }
     
-    public List ListarProductos(){
+    public List ListarProductos() {
+    	List<Productos> Listapro = new ArrayList();
+
+    	try {
+            // Create a URL object with the endpoint URL
+            URL url = new URL(GET_URL);
+            
+            // Open a connection to the URL
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            
+            // Set the request method to GET
+            connection.setRequestMethod("GET");
+            
+            // Set request headers if needed
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0");
+
+            // Get the response code
+            int responseCode = connection.getResponseCode();
+
+            // Read the response if the response code is HTTP_OK (200)
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                String inputLine;
+                StringBuffer response = new StringBuffer();
+                
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+                
+                String jsonString = response.toString();
+                JSONArray jsonArray = new JSONArray(jsonString);
+
+                // Recorrer el array y extraer elementos de cada JSONObject
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject jsonObject = jsonArray.getJSONObject(i);
+                    int id = jsonObject.getInt("id");
+                    String codigo = jsonObject.getString("codigo");
+                    String nombre = jsonObject.getString("nombre");
+                    double precio = jsonObject.getDouble("precio");
+                    int stock = jsonObject.getInt("stock");
+                    int id_proveedor = jsonObject.getInt("id_proveedor");
+                    String nombre_proveedor = jsonObject.getString("nombre_proveedor");
+
+                    Productos pro = new Productos();
+                    pro.setId(id);
+                    pro.setCodigo(codigo);
+                    pro.setNombre(nombre);
+                    pro.setProveedor(id_proveedor);
+                    pro.setProveedorPro(nombre_proveedor);
+                    pro.setStock(stock);
+                    pro.setPrecio(precio);
+                    Listapro.add(pro);
+                }
+            } else {
+                System.out.println("GET request not worked");
+            }            
+            
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Listapro;
+    } 
+    
+    public List ListarProductosLegado(){    	
        List<Productos> Listapro = new ArrayList();
        String sql = "SELECT pr.id AS id_proveedor, pr.nombre AS nombre_proveedor, p.* FROM proveedor pr INNER JOIN productos p ON pr.id = p.proveedor ORDER BY p.id DESC";
        try {
